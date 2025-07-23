@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (supabaseUser: SupabaseUser) => {
     try {
-      const { data: userData, error: userError } = await supabase
+      let { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', supabaseUser.id)
@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           points: 0
         });
 
-        userData = newUserData;
+        let userData = newUserData;
       }
 
       const { data: leaderboardData, error: leaderboardError } = await supabase
