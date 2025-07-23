@@ -35,13 +35,25 @@ const ChatPage: React.FC = () => {
     }
   }, [showNewChatModal, showGroupModal]);
 
+  useEffect(() => {
+    if (showNewChatModal || showGroupModal) {
+      setSearchUsers(''); // Reset search when modal opens
+    }
+  }, [showNewChatModal, showGroupModal]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const loadUsers = async () => {
-    const users = await loadAllUsers();
-    setAvailableUsers(users);
+    try {
+      const users = await loadAllUsers();
+      console.log('Loaded users:', users); // Debug log
+      setAvailableUsers(users);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      setAvailableUsers([]);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -82,8 +94,11 @@ const ChatPage: React.FC = () => {
   const chatMessages = messages.filter(msg => msg.chatId === selectedChatId);
 
   const filteredUsers = availableUsers.filter(u => 
+    searchUsers === '' || 
     u.name.toLowerCase().includes(searchUsers.toLowerCase()) ||
-    u.display_id.toLowerCase().includes(searchUsers.toLowerCase())
+    u.display_id.toLowerCase().includes(searchUsers.toLowerCase()) ||
+    u.role.toLowerCase().includes(searchUsers.toLowerCase()) ||
+    (u.kelas && u.kelas.toLowerCase().includes(searchUsers.toLowerCase()))
   );
 
   return (
@@ -420,7 +435,20 @@ const ChatPage: React.FC = () => {
             )}
 
             <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-              {filteredUsers.map((u) => (
+              {availableUsers.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Memuat daftar user...
+                  </p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Tidak ada user yang ditemukan
+                  </p>
+                </div>
+              ) : (
+                filteredUsers.map((u) => (
                 <button
                   key={u.id}
                   onClick={() => {
@@ -456,6 +484,7 @@ const ChatPage: React.FC = () => {
                   )}
                 </button>
               ))}
+              )
             </div>
 
             <button
