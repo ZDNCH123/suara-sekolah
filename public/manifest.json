@@ -1,0 +1,49 @@
+{
+  "name": "SuaraSekolah.id - Portal Sekolah Modern",
+  "short_name": "SuaraSekolah",
+  "description": "Portal sekolah kekinian untuk Gen Z - curhat, berita, dan chat dalam satu tempat",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1F2937",
+  "theme_color": "#7F5AF0",
+  "orientation": "portrait-primary",
+  "categories": ["education", "social", "productivity"],
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Speak Up Corner",
+      "short_name": "Pengaduan",
+      "description": "Buat laporan atau pengaduan",
+      "url": "/speak-up",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "AI Konselor",
+      "short_name": "AI Chat",
+      "description": "Chat dengan AI Konselor",
+      "url": "/ai-conselor",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Chat Internal",
+      "short_name": "Chat",
+      "description": "Chat dengan teman dan guru",
+      "url": "/chat",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
