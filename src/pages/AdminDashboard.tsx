@@ -146,66 +146,29 @@ const AdminDashboard: React.FC = () => {
     e.preventDefault();
     
     try {
-      // Generate display ID
-      const generateDisplayId = () => {
-        return Math.random().toString(36).substring(2, 10).toUpperCase();
-      };
-
-      let displayId = generateDisplayId();
+      // Get current user's session token
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Check if display_id already exists
-      let { data: existingUser } = await supabase
-        .from('users')
-        .select('display_id')
-        .eq('display_id', displayId)
-        .maybeSingle();
-
-      while (existingUser) {
-        displayId = generateDisplayId();
-        const { data } = await supabase
-          .from('users')
-          .select('display_id')
-          .eq('display_id', displayId)
-          .maybeSingle();
-        existingUser = data;
+      if (!session) {
+        throw new Error('No active session');
       }
 
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: `${newUserData.nikNis}@suarasekolah.id`,
-        password: newUserData.password,
-        user_metadata: {
-          full_name: newUserData.name,
-          nik_nis: newUserData.nikNis,
+      // Call Edge Function to create user
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          name: newUserData.name,
+          nikNis: newUserData.nikNis,
           role: newUserData.role,
-          kelas: newUserData.kelas
+          kelas: newUserData.kelas,
+          password: newUserData.password
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
-      if (authError) throw authError;
-
-      // Insert into users table
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          nik_nis: newUserData.nikNis,
-          display_id: displayId,
-          name: newUserData.name,
-          role: newUserData.role,
-          password_hash: 'handled_by_supabase_auth',
-          kelas: newUserData.kelas || null
-        });
-
-      if (insertError) throw insertError;
-
-      // Create leaderboard entry
-      await supabase.from('leaderboard').insert({
-        user_id: authData.user.id,
-        total_berita: 0,
-        total_pengaduan: 0,
-        points: 0
-      });
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       alert('User berhasil ditambahkan!');
       setShowAddUser(false);
