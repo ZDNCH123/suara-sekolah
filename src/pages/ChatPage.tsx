@@ -483,8 +483,8 @@ const ChatPage: React.FC = () => {
                     </div>
                   )}
                 </button>
-              ))}
-              )
+              ))
+              )}
             </div>
 
             <button
