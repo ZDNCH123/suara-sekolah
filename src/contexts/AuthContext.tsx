@@ -123,18 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // If user already exists in auth, try to sign in to get user ID
           if (authError.message === 'User already registered') {
             console.log('Default admin already exists in auth, signing in...');
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-              email: `${defaultAdmin.nikNis}@suarasekolah.id`,
-              password: defaultAdmin.password
-            });
-
-            if (signInError || !signInData.user) {
-              console.error('Failed to sign in existing default admin:', signInError);
-              return;
-            }
-
-            userId = signInData.user.id;
-            console.log('Successfully signed in existing default admin');
+            console.warn('Default admin already exists in Supabase Auth. Please log in manually with the correct credentials.');
+            return;
           } else {
             console.error('Failed to create default admin auth:', authError);
             return;
@@ -243,7 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           points: 0
         });
 
-        let userData = newUserData;
+        userData = newUserData;
       }
 
       const { data: leaderboardData, error: leaderboardError } = await supabase
