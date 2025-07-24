@@ -104,36 +104,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Generate display ID
         const displayId = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        // Create user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // First try to sign in (in case user already exists in Auth)
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: `${defaultAdmin.nikNis}@suarasekolah.id`,
-          password: defaultAdmin.password,
-          options: {
-            data: {
-              full_name: defaultAdmin.name,
-              nik_nis: defaultAdmin.nikNis,
-              role: defaultAdmin.role
-            }
-          }
+          password: defaultAdmin.password
         });
 
         let userId: string;
+        let authData: any = null;
 
-        if (authError) {
-          // If user already exists in auth, try to sign in to get user ID
-          if (authError.message === 'User already registered') {
-            console.log('Default admin already exists in auth, signing in...');
-            console.warn('Default admin already exists in Supabase Auth. Please log in manually with the correct credentials.');
-            return;
+        if (signInError) {
+          // If sign-in fails, try to create the user
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: `${defaultAdmin.nikNis}@suarasekolah.id`,
+            password: defaultAdmin.password,
+            options: {
+              data: {
+                full_name: defaultAdmin.name,
+                nik_nis: defaultAdmin.nikNis,
+                role: defaultAdmin.role
+              }
+            }
+          });
+
+          if (signUpError) {
+            if (signUpError.message === 'User already registered') {
+              // Try to sign in again if signup fails with user already exists
+              const { data: retrySignInData, error: retrySignInError } = await supabase.auth.signInWithPassword({
+                email: `${defaultAdmin.nikNis}@suarasekolah.id`,
+                password: defaultAdmin.password
+              });
+
+              if (retrySignInError) {
+                console.error('Failed to sign in existing default admin:', retrySignInError);
+                return;
+              } else if (retrySignInData.user) {
+                userId = retrySignInData.user.id;
+                authData = retrySignInData;
+                console.log('Successfully signed in existing default admin');
+              } else {
+                console.error('No user data returned from retry sign in');
+                return;
+              }
+            } else {
+              console.error('Failed to create default admin auth:', signUpError);
+              return;
+            }
+          } else if (signUpData.user) {
+            userId = signUpData.user.id;
+            authData = signUpData;
+            console.log('Successfully created new default admin');
           } else {
-            console.error('Failed to create default admin auth:', authError);
+            console.error('No user data returned from signup');
             return;
           }
-        } else if (authData.user) {
-          userId = authData.user.id;
-          console.log('Successfully created new default admin');
+        } else if (signInData.user) {
+          userId = signInData.user.id;
+          authData = signInData;
+          console.log('Successfully signed in existing default admin');
         } else {
-          console.error('No user data returned from signup');
+          console.error('No user data returned from sign in');
           return;
         }
 
