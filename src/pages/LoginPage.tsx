@@ -118,6 +118,12 @@ const LoginPage: React.FC = () => {
               </div>
             )}
 
+            <div className="bg-blue-500 bg-opacity-20 border border-blue-500 text-blue-400 px-4 py-3 rounded-lg">
+              <p className="text-sm font-medium mb-1">Default Admin Login:</p>
+              <p className="text-xs">NIK/NIS: <span className="font-mono">admin123</span></p>
+              <p className="text-xs">Password: <span className="font-mono">admin123</span></p>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 NIK/NIS

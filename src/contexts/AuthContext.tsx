@@ -48,6 +48,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const loadSession = async () => {
+      // Check if any users exist, if not create default admin
+      await ensureDefaultAdmin();
+      
       const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error) {
@@ -73,6 +76,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const ensureDefaultAdmin = async () => {
+    try {
+      // Check if any users exist in the users table
+      const { data: existingUsers, error } = await supabase
+        .from('users')
+        .select('id')
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking existing users:', error);
+        return;
+      }
+
+      // If no users exist, create default admin
+      if (!existingUsers || existingUsers.length === 0) {
+        console.log('No users found, creating default admin...');
+        
+        const defaultAdmin = {
+          nikNis: 'admin123',
+          name: 'Administrator',
+          role: 'admin' as const,
+          password: 'admin123'
+        };
+
+        // Generate display ID
+        const displayId = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        // Create user in Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: `${defaultAdmin.nikNis}@suarasekolah.id`,
+          password: defaultAdmin.password,
+          options: {
+            data: {
+              full_name: defaultAdmin.name,
+              nik_nis: defaultAdmin.nikNis,
+              role: defaultAdmin.role
+            }
+          }
+        });
+
+        if (authError) {
+          console.error('Failed to create default admin auth:', authError);
+          return;
+        }
+
+        if (authData.user) {
+          // Insert into users table
+          const { error: insertError } = await supabase.from('users').insert({
+            id: authData.user.id,
+            nik_nis: defaultAdmin.nikNis,
+            display_id: displayId,
+            name: defaultAdmin.name,
+            role: defaultAdmin.role,
+            password_hash: 'handled_by_supabase_auth'
+          });
+
+          if (insertError) {
+            console.error('Failed to insert default admin to users table:', insertError);
+            return;
+          }
+
+          // Create leaderboard entry
+          await supabase.from('leaderboard').insert({
+            user_id: authData.user.id,
+            total_berita: 0,
+            total_pengaduan: 0,
+            points: 0
+          });
+
+          console.log('Default admin created successfully!');
+          console.log('Login credentials:');
+          console.log('NIK/NIS: admin123');
+          console.log('Password: admin123');
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring default admin:', error);
+    }
+  };
 
   const loadUserProfile = async (supabaseUser: SupabaseUser) => {
     try {
