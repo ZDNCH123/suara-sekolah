@@ -117,15 +117,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         });
 
+        let userId: string;
+
         if (authError) {
-          console.error('Failed to create default admin auth:', authError);
+          // If user already exists in auth, try to sign in to get user ID
+          if (authError.message === 'User already registered') {
+            console.log('Default admin already exists in auth, signing in...');
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: `${defaultAdmin.nikNis}@suarasekolah.id`,
+              password: defaultAdmin.password
+            });
+
+            if (signInError || !signInData.user) {
+              console.error('Failed to sign in existing default admin:', signInError);
+              return;
+            }
+
+            userId = signInData.user.id;
+            console.log('Successfully signed in existing default admin');
+          } else {
+            console.error('Failed to create default admin auth:', authError);
+            return;
+          }
+        } else if (authData.user) {
+          userId = authData.user.id;
+          console.log('Successfully created new default admin');
+        } else {
+          console.error('No user data returned from signup');
           return;
         }
 
-        if (authData.user) {
+        // Check if user already exists in users table
+        const { data: existingUserProfile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!existingUserProfile) {
           // Insert into users table
           const { error: insertError } = await supabase.from('users').insert({
-            id: authData.user.id,
+            id: userId,
             nik_nis: defaultAdmin.nikNis,
             display_id: displayId,
             name: defaultAdmin.name,
@@ -137,20 +169,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Failed to insert default admin to users table:', insertError);
             return;
           }
+        }
 
+        // Check if leaderboard entry exists
+        const { data: existingLeaderboard } = await supabase
+          .from('leaderboard')
+          .select('user_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!existingLeaderboard) {
           // Create leaderboard entry
           await supabase.from('leaderboard').insert({
-            user_id: authData.user.id,
+            user_id: userId,
             total_berita: 0,
             total_pengaduan: 0,
             points: 0
           });
-
-          console.log('Default admin created successfully!');
-          console.log('Login credentials:');
-          console.log('NIK/NIS: admin123');
-          console.log('Password: admin123');
         }
+
+        console.log('Default admin setup completed successfully!');
+        console.log('Login credentials:');
+        console.log('NIK/NIS: admin123');
+        console.log('Password: admin123');
       }
     } catch (error) {
       console.error('Error ensuring default admin:', error);
